@@ -2,11 +2,20 @@
 
 A lightweight full-stack chatbot with near-real-time inference logging, ingestion validation, SQLite storage, and basic observability dashboards.
 
+## Demo
+
+- Loom: `TODO: add Loom video link`
+- Repository: https://github.com/lazywolf01/inferece-chat
+- Local Kubernetes demo URL after port-forwarding: `http://127.0.0.1:8080`
+
+The app has been deployed and verified on a local self-hosted Kubernetes cluster using Minikube. The `127.0.0.1` URL is intentionally local-only; use the Loom video or deploy to a public server/tunnel for an externally shareable demo URL.
+
 ## Features
 
 - Multi-turn chatbot UI with short context windows.
 - Streaming responses with cancel support.
 - Multi-provider wrapper: `mock`, `openai`, `anthropic`, and `gemini`.
+- Real Gemini support with `gemini-2.5-flash`.
 - SDK-style inference logging around every LLM call.
 - Ingestion API with payload validation, metadata extraction, and PII redaction for previews.
 - SQLite tables for conversations, chat messages, inference logs, ingestion events, and a durable ingestion queue.
@@ -26,6 +35,7 @@ A lightweight full-stack chatbot with near-real-time inference logging, ingestio
 - PII redaction: email, phone, and card-like values are redacted from telemetry previews.
 - Self-hosted Kubernetes deployment: manifests in `k8s/deployment.yaml`.
 - Frontend: modern chat UI with cancel, list conversations, and resume conversation.
+- Deployed on self-hosted Kubernetes: verified with Minikube, persistent volume, service, secret, and config resources.
 
 ## Quick Start
 
@@ -47,6 +57,50 @@ docker compose up --build
 ```
 
 Open `http://localhost:8080`.
+
+## Self-Hosted Kubernetes
+
+This project includes Kubernetes resources in `k8s/deployment.yaml` and was verified on a local self-hosted Minikube cluster.
+
+Build and load the image:
+
+```bash
+docker build -t inference-logger:latest .
+minikube start --driver=docker --profile inference-chat
+minikube -p inference-chat image load inference-logger:latest
+kubectl config use-context inference-chat
+```
+
+Apply the manifests:
+
+```bash
+kubectl apply -f k8s/deployment.yaml
+```
+
+Create provider secrets without committing API keys:
+
+```bash
+kubectl -n inference-logger create secret generic inference-logger-secrets \
+  --from-literal=OPENAI_API_KEY=... \
+  --from-literal=ANTHROPIC_API_KEY=... \
+  --from-literal=GEMINI_API_KEY=... \
+  --dry-run=client -o yaml | kubectl apply -f -
+```
+
+Restart after changing secrets:
+
+```bash
+kubectl -n inference-logger rollout restart deployment/inference-logger
+kubectl -n inference-logger rollout status deployment/inference-logger
+```
+
+Expose locally:
+
+```bash
+kubectl -n inference-logger port-forward service/inference-logger 8080:80
+```
+
+Then open `http://127.0.0.1:8080`.
 
 ## Scripts
 
@@ -132,6 +186,4 @@ kubectl -n inference-logger create secret generic inference-logger-secrets \
   --from-literal=GEMINI_API_KEY=...
 ```
 
-## Demo
-
-Run the project locally with either quick start path above. The UI itself demonstrates the full flow: send a chat, watch the streamed answer, then see the request appear in the telemetry panel.
+For a public demo link, deploy the same image to a VPS-hosted Kubernetes cluster behind an ingress/load balancer, or use a temporary tunnel such as Cloudflare Tunnel/ngrok against the local port-forward.
