@@ -184,8 +184,8 @@ export function resolveProvider({ provider, model }) {
   if (selectedProvider === "gemini" && process.env.GEMINI_API_KEY) {
     return {
       provider: "gemini",
-      model: selectedModel || "gemini-1.5-flash",
-      stream: (args) => streamGemini({ ...args, apiKey: process.env.GEMINI_API_KEY, model: selectedModel || "gemini-1.5-flash" })
+      model: selectedModel || "gemini-2.5-flash",
+      stream: (args) => streamGemini({ ...args, apiKey: process.env.GEMINI_API_KEY, model: selectedModel || "gemini-2.5-flash" })
     };
   }
 
