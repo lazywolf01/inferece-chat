@@ -4,11 +4,13 @@ A lightweight full-stack chatbot with near-real-time inference logging, ingestio
 
 ## Demo
 
-- Loom: `TODO: add Loom video link`
+- Loom: https://www.loom.com/share/f1d0edeb95434bf9b6f62d9d56e46ce2
 - Repository: https://github.com/lazywolf01/inferece-chat
 - Local Kubernetes demo URL after port-forwarding: `http://127.0.0.1:8080`
 
 The app has been deployed and verified on a local self-hosted Kubernetes cluster using Minikube. The `127.0.0.1` URL is intentionally local-only; use the Loom video or deploy to a public server/tunnel for an externally shareable demo URL.
+
+![Inference Chat screenshot](docs/screenshot.png)
 
 ## Features
 
