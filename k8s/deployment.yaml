@@ -1,0 +1,101 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: inference-logger
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: inference-logger-config
+  namespace: inference-logger
+data:
+  PORT: "8080"
+  DATABASE_PATH: /app/data/app.sqlite
+  INGESTION_URL: http://localhost:8080/api/ingest/logs
+  DEFAULT_PROVIDER: mock
+  DEFAULT_MODEL: mock-fast
+  OPENAI_MODEL: gpt-4o-mini
+  ANTHROPIC_MODEL: claude-3-5-haiku-latest
+  GEMINI_MODEL: gemini-1.5-flash
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: inference-logger-secrets
+  namespace: inference-logger
+type: Opaque
+stringData:
+  OPENAI_API_KEY: ""
+  ANTHROPIC_API_KEY: ""
+  GEMINI_API_KEY: ""
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: inference-logger-data
+  namespace: inference-logger
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 1Gi
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: inference-logger
+  namespace: inference-logger
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: inference-logger
+  template:
+    metadata:
+      labels:
+        app: inference-logger
+    spec:
+      containers:
+        - name: app
+          image: inference-logger:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8080
+          envFrom:
+            - configMapRef:
+                name: inference-logger-config
+            - secretRef:
+                name: inference-logger-secrets
+          readinessProbe:
+            httpGet:
+              path: /api/health
+              port: 8080
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /api/health
+              port: 8080
+            initialDelaySeconds: 15
+            periodSeconds: 20
+          volumeMounts:
+            - name: data
+              mountPath: /app/data
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: inference-logger-data
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: inference-logger
+  namespace: inference-logger
+spec:
+  selector:
+    app: inference-logger
+  ports:
+    - port: 80
+      targetPort: 8080
+      protocol: TCP
